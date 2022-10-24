@@ -57,7 +57,8 @@ class VideoReceiver:
 
         if self.record and self.output_dir is not None:
             if not self.initialized:
-                shutil.rmtree(self.output_dir)
+                if os.path.exists(self.output_dir):
+                    shutil.rmtree(self.output_dir)
                 os.makedirs(os.path.join(self.output_dir, 'color'))
                 os.makedirs(os.path.join(self.output_dir, 'depth'))
 
