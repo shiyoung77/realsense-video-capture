@@ -20,7 +20,7 @@ from sensor_msgs.msg import Image
 
 class VideoReceiver:
 
-    def __init__(self, bgr_topic, depth_topic, output_dir=None):
+    def __init__(self, bgr_topic, depth_topic, cam_info_topic, output_dir=None):
         self.bridge = CvBridge()
         bgr_im_sub = Subscriber(bgr_topic, Image)
         depth_im_sub = Subscriber(depth_topic, Image)
@@ -41,7 +41,7 @@ class VideoReceiver:
             if key and key.upper() != "Y": 
                 exit(0)
 
-        cam_info_msg = rospy.wait_for_message(args.cam_info_topic, Float64MultiArray)
+        cam_info_msg = rospy.wait_for_message(cam_info_topic, Float64MultiArray)
         im_h, im_w, depth_scale, fx, fy, cx, cy = cam_info_msg.data
         cam_info = dict()
         cam_info['id'] = os.path.basename(output_dir)
@@ -97,6 +97,7 @@ def main():
     vr = VideoReceiver(
         bgr_topic=args.bgr_topic,
         depth_topic=args.depth_topic,
+        cam_info_topic=args.cam_info_topic,
         output_dir=os.path.join(args.dataset, args.video)
     )
 
