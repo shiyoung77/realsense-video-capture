@@ -2,13 +2,8 @@
 # Python >= 3.6 required, else modify os.makedirs and f-strings
 # opencv-python: 4.2.0.34  (This version does not have Qthread issues.)
 
-import os
-import json
-import shutil
-from argparse import ArgumentParser
-import pyrealsense2 as rs
 import numpy as np
-import cv2
+import pyrealsense2 as rs
 
 import rospy
 import rosgraph
@@ -16,9 +11,10 @@ from cv_bridge import CvBridge
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 
+
 class RealSenseCamera:
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, fps=60):
         if config is not None:
             self.config = config
         else:
@@ -31,8 +27,8 @@ class RealSenseCamera:
             # self.config.enable_stream(rs.stream.color, 960, 540, rs.format.bgr8, 30)
 
             # for D435 and D415
-            self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-            self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+            self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, fps)
+            self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, fps)
 
         self.bridge = CvBridge()
 
@@ -43,8 +39,9 @@ class RealSenseCamera:
         self.color_im_pub = rospy.Publisher(self.bgr_topic, Image, queue_size=10)
         self.depth_im_pub = rospy.Publisher(self.depth_topic, Image, queue_size=10)
         self.cam_info_pub = rospy.Publisher(self.cam_info_topic, Float64MultiArray, queue_size=10)
+        self.ros_rate = rospy.Rate(fps)
 
-    def run(self, rate):
+    def run(self):
         pipeline = rs.pipeline()
         profile = pipeline.start(self.config)
 
@@ -69,6 +66,8 @@ class RealSenseCamera:
         try:
             while not rospy.is_shutdown():
                 frames = pipeline.wait_for_frames()
+                timestamp = rospy.get_rostime()
+
                 aligned_frames = align.process(frames)
                 depth_frame = aligned_frames.get_depth_frame()
                 color_frame = aligned_frames.get_color_frame()
@@ -83,21 +82,27 @@ class RealSenseCamera:
                 # ROS publisher
                 color_msg = self.bridge.cv2_to_imgmsg(bgr_im, 'bgr8')
                 depth_msg = self.bridge.cv2_to_imgmsg(depth_im, 'mono16')
+                color_msg.header.stamp = timestamp
+                depth_msg.header.stamp = timestamp
+
                 self.color_im_pub.publish(color_msg)
                 self.depth_im_pub.publish(depth_msg)
                 self.cam_info_pub.publish(cam_info_msg)
 
-                rate.sleep()
+                self.ros_rate.sleep()
         finally:
             pipeline.stop()
 
 
-if __name__ == '__main__':
+def main():
     if not rosgraph.is_master_online():
         print("roscore is not running! Either comment out ROS related stuff or run roscore first!")
         exit(0)
 
     rospy.init_node("realsense", anonymous=True)
-    rate = rospy.Rate(30)
-    camera = RealSenseCamera()
-    camera.run(rate)
+    camera = RealSenseCamera(fps=60)
+    camera.run()
+
+
+if __name__ == '__main__':
+    main()

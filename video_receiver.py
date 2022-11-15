@@ -5,28 +5,29 @@
 import os
 import json
 import shutil
-from argparse import ArgumentParser
-import pyrealsense2 as rs
 import numpy as np
 import cv2
 from pprint import pprint
+from argparse import ArgumentParser
 
 import rospy
 import rosgraph
-import message_filters
+from message_filters import Subscriber, ApproximateTimeSynchronizer
 from cv_bridge import CvBridge
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
+
 
 class VideoReceiver:
 
     def __init__(self, bgr_topic, depth_topic, output_dir=None):
         self.bridge = CvBridge()
-        bgr_im_sub = message_filters.Subscriber(bgr_topic, Image)
-        depth_im_sub = message_filters.Subscriber(depth_topic, Image)
+        bgr_im_sub = Subscriber(bgr_topic, Image)
+        depth_im_sub = Subscriber(depth_topic, Image)
 
-        self.time_synchornizer = message_filters.ApproximateTimeSynchronizer([bgr_im_sub, depth_im_sub], queue_size=10, slop=0.1)
-        self.time_synchornizer.registerCallback(self.callback)
+        subscribers = [bgr_im_sub, depth_im_sub]
+        self.time_synchronizer = ApproximateTimeSynchronizer(subscribers, queue_size=10, slop=0.1)
+        self.time_synchronizer.registerCallback(self.callback)
 
         self.bgr_im = None
         self.depth_im = None
@@ -69,14 +70,14 @@ class VideoReceiver:
 
                 self.initialized = True
 
-            cv2.imwrite(os.path.join(self.output_dir, 'color', f"{self.count:04d}-color.jpg"), bgr_im)
-            cv2.imwrite(os.path.join(self.output_dir, 'depth', f"{self.count:04d}-depth.png"), depth_im)
+            cv2.imwrite(os.path.join(self.output_dir, 'color', f"{self.count:04d}-color.jpg"), self.bgr_im)
+            cv2.imwrite(os.path.join(self.output_dir, 'depth', f"{self.count:04d}-depth.png"), self.depth_im)
             self.count += 1
             if self.count % 100 == 0:
                 print(f"{self.count} frames have been saved.")
 
 
-if __name__ == '__main__':
+def main():
     if not rosgraph.is_master_online():
         print("roscore is not running! Either comment out ROS related stuff or run roscore first!")
         exit(0)
@@ -84,7 +85,7 @@ if __name__ == '__main__':
     rospy.init_node("video_receiver", anonymous=True)
 
     parser = ArgumentParser(description='video receiver')
-    parser.add_argument('--datapath', default=os.path.expanduser("~/dataset/collected_videos"))
+    parser.add_argument('--dataset', default=os.path.expanduser("~/dataset/collected_videos"))
     parser.add_argument('-v', '--video', default="0001", help='video id')
     parser.add_argument('--bgr_topic', default="/bgr_images")
     parser.add_argument('--depth_topic', default="/depth_images")
@@ -96,7 +97,7 @@ if __name__ == '__main__':
     vr = VideoReceiver(
         bgr_topic=args.bgr_topic,
         depth_topic=args.depth_topic,
-        output_dir=os.path.join(args.datapath, args.video)
+        output_dir=os.path.join(args.dataset, args.video)
     )
 
     rate = rospy.Rate(30)
@@ -122,3 +123,7 @@ if __name__ == '__main__':
                 print("Stop recording.")
 
         rate.sleep()
+
+
+if __name__ == '__main__':
+    main()
