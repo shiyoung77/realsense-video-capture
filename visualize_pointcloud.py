@@ -17,6 +17,7 @@ rgb_im = cv2.cvtColor(cv2.imread(color_path, cv2.IMREAD_COLOR), cv2.COLOR_BGR2RG
 hsv_im = cv2.cvtColor(rgb_im, cv2.COLOR_RGB2HSV)
 depth_im = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED).astype(np.float32) / cam_info['depth_scale']
 
+
 def get_color(event):
     if event.xdata and event.ydata:
         x = int(round(event.xdata))
