@@ -1,6 +1,4 @@
 # Author: Shiyang Lu, 2022
-# Python >= 3.6 required, else modify os.makedirs and f-strings
-# opencv-python: 4.2.0.34  (This version does not have Qthread issues.)
 
 import numpy as np
 import pyrealsense2 as rs

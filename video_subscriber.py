@@ -1,6 +1,4 @@
 # Author: Shiyang Lu, 2022
-# Python >= 3.6 required, else modify os.makedirs and f-strings
-# opencv-python: 4.2.0.34  (This version does not have Qthread issues.)
 
 import os
 import json
@@ -38,7 +36,7 @@ class VideoReceiver:
         self.output_dir = output_dir
         if os.path.exists(output_dir):
             key = input(f"{output_dir} has already existed, overwrite? [Y/n]")
-            if key and key.upper() != "Y": 
+            if key and key.upper() != "Y":
                 exit(0)
 
         cam_info_msg = rospy.wait_for_message(cam_info_topic, Float64MultiArray)

@@ -1,7 +1,4 @@
 # Author: Shiyang Lu, 2021
-# Python >= 3.6 required, else modify os.makedirs and f-strings
-# opencv-contrib-python: 4.2.0.34  (This version does not have Qthread issue.)
-# Remove opencv-python before install opencv-contrib-python
 
 import os
 import json
@@ -30,6 +27,10 @@ class RealSenseCamera:
             # for D435 and D415
             self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, fps)
             self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, fps)
+
+            # for D455
+            # self.config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, fps)
+            # self.config.enable_stream(rs.stream.color, 1280, 800, rs.format.bgr8, fps)
 
         self.record = False
 
@@ -116,7 +117,7 @@ class RealSenseCamera:
                 elif key == ord('s') and self.record:
                     self.record = False
                     print("Stop recording.")
-                
+
                 if self.record:
                     cv2.imwrite(os.path.join(output_dir, 'color', f"{count:04d}-color.jpg"), bgr_im)
                     cv2.imwrite(os.path.join(output_dir, 'depth', f"{count:04d}-depth.png"), depth_im)
